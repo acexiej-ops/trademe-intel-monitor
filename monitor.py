@@ -100,16 +100,16 @@ def main():
             
             if listing['url'] not in seen:
                 
-                message = f\"New listing found for **{keyword}**: {listing['title']}\\n{listing['url']}\"
-                
+                message = f'New listing found for **{keyword}**: {listing[\"title\"]}\\n{listing[\"url\"]}'
+                                                                  
                 send_discord_message(message)
-                
+                                                                  
                 new_seen.append(listing['url'])
-                
+                                                                  
 
-
+                                                                  
     with open(FILE_NAME, 'w') as f:
-        
+                
         json.dump(new_seen[-1000:], f)
         
 
@@ -117,6 +117,7 @@ def main():
 if __name__ == '__main__':
     
     main()
+
 
 
 
