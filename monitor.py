@@ -1,4 +1,4 @@
-""import requests
+import requests
 
 import json
 
@@ -70,6 +70,8 @@ def get_listings(keyword):
 
 def main():
     
+    seen = []
+    
     if os.path.exists(FILE_NAME):
         
         with open(FILE_NAME, 'r') as f:
@@ -82,10 +84,6 @@ def main():
                 
                 seen = []
                 
-    else:
-        
-        seen = []
-        
 
 
     new_seen = list(seen)
@@ -102,15 +100,13 @@ def main():
             
             if listing['url'] not in seen:
                 
-                message = f"New listing found for **{keyword}**: {listing['title']}\\n{listing['url']}"
+                message = f\"New listing found for **{keyword}**: {listing['title']}\\n{listing['url']}\"
                 
                 send_discord_message(message)
                 
                 new_seen.append(listing['url'])
                 
 
-
-    # Keep only the last 1000 listings to prevent file growth
 
     with open(FILE_NAME, 'w') as f:
         
@@ -121,10 +117,6 @@ def main():
 if __name__ == '__main__':
     
     main()
-    
-""
-
-
 
 
 
