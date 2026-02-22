@@ -1,1 +1,55 @@
-import requests\nimport json\nimport os\nfrom bs4 import BeautifulSoup\n\nURL = 'https://www.trademe.co.nz/a/marketplace/computers/search?search_string=intel&sort_order=expirydesc'\nFILE_NAME = 'seen_listings.json'\nDISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL')\n\ndef send_discord_message(message):\n    if DISCORD_WEBHOOK_URL:\n        requests.post(DISCORD_WEBHOOK_URL, json={'content': message})\n    else:\n        print('Discord Webhook URL not set.')\n\ndef get_listings():\n    headers = {'User-Agent': 'Mozilla/5.0'}\n    response = requests.get(URL, headers=headers)\n    soup = BeautifulSoup(response.content, 'html.parser')\n    listings = []\n    for card in soup.find_all('tm-marketplace-search-card-viewer')[:5]:\n        title_tag = card.find('div', class_='tm-marketplace-search-card__title')\n        link_tag = card.find('a', class_='tm-marketplace-search-card__link')\n        if title_tag and link_tag:\n            listings.append({\n                'title': title_tag.get_text(strip=True),\n                'url': 'https://www.trademe.co.nz' + link_tag['href']\n            })\n    return listings\n\ndef main():\n    if os.path.exists(FILE_NAME):\n        with open(FILE_NAME, 'r') as f:\n            seen = json.load(f)\n    else:\n        seen = []\n\n    current_listings = get_listings()\n    new_listings = [l for l in current_listings if l['url'] not in [s['url'] for s in seen]]\n\n    if new_listings:\n        print(f'Found {len(new_listings)} new listings!')\n        for l in new_listings:\n            msg = f\"NEW INTEL LISTING: {l['title']} - {l['url']}\"\n            print(msg)\n            send_discord_message(msg)\n        \n        seen.extend(new_listings)\n        with open(FILE_NAME, 'w') as f:\n            json.dump(seen[-50:], f, indent=4)\n    else:\n        print('No new listings found.')\n\nif __name__ == '__main__':\n    main()
+import requests
+import json
+import os
+from bs4 import BeautifulSoup
+
+URL = 'https://www.trademe.co.nz/a/marketplace/computers/search?search_string=intel&sort_order=expirydesc'
+FILE_NAME = 'seen_listings.json'
+DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL')
+
+def send_discord_message(message):
+    if DISCORD_WEBHOOK_URL:
+        requests.post(DISCORD_WEBHOOK_URL, json={'content': message})
+    else:
+        print('Discord Webhook URL not set.')
+
+def get_listings():
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    response = requests.get(URL, headers=headers)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    listings = []
+    for card in soup.find_all('tm-marketplace-search-card-viewer')[:5]:
+        title_tag = card.find('div', class_='tm-marketplace-search-card__title')
+        link_tag = card.find('a', class_='tm-marketplace-search-card__link')
+        if title_tag and link_tag:
+            listings.append({
+                'title': title_tag.get_text(strip=True),
+                'url': 'https://www.trademe.co.nz' + link_tag['href']
+            })
+    return listings
+
+def main():
+    if os.path.exists(FILE_NAME):
+        with open(FILE_NAME, 'r') as f:
+            seen = json.load(f)
+    else:
+        seen = []
+
+    current_listings = get_listings()
+    new_listings = [l for l in current_listings if l['url'] not in [s['url'] for s in seen]]
+
+    if new_listings:
+        print(f'Found {len(new_listings)} new listings!')
+        for l in new_listings:
+            msg = f"NEW INTEL LISTING: {l['title']} - {l['url']}"
+            print(msg)
+            send_discord_message(msg)
+        
+        seen.extend(new_listings)
+        with open(FILE_NAME, 'w') as f:
+            json.dump(seen[-50:], f, indent=4)
+    else:
+        print('No new listings found.')
+
+if __name__ == '__main__':
+    main()
