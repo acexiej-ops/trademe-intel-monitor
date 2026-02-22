@@ -1,55 +1,170 @@
-import requests
+""import requests
+
 import json
+
 import os
+
 from bs4 import BeautifulSoup
 
-URL = 'https://www.trademe.co.nz/a/marketplace/computers/search?search_string=intel&sort_order=expirydesc'
+
+
+KEYWORDS = ['ryzen', 'intel', 'cpu', 'gpu', 'monitor', 'motherboard', 'laptop']
+
 FILE_NAME = 'seen_listings.json'
+
 DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL')
 
-def send_discord_message(message):
-    if DISCORD_WEBHOOK_URL:
-        requests.post(DISCORD_WEBHOOK_URL, json={'content': message})
-    else:
-        print('Discord Webhook URL not set.')
 
-def get_listings():
+
+def send_discord_message(message):
+    
+    if DISCORD_WEBHOOK_URL:
+        
+        requests.post(DISCORD_WEBHOOK_URL, json={'content': message})
+        
+    else:
+        
+        print('Discord Webhook URL not set.')
+        
+
+
+def get_listings(keyword):
+    
+    url = f'https://www.trademe.co.nz/a/marketplace/computers/search?search_string={keyword}&sort_order=expirydesc'
+    
     headers = {'User-Agent': 'Mozilla/5.0'}
-    response = requests.get(URL, headers=headers)
-    soup = BeautifulSoup(response.content, 'html.parser')
-    listings = []
-    for card in soup.find_all('tm-marketplace-search-card-viewer')[:5]:
-        title_tag = card.find('div', class_='tm-marketplace-search-card__title')
-        link_tag = card.find('a', class_='tm-marketplace-search-card__link')
-        if title_tag and link_tag:
-            listings.append({
-                'title': title_tag.get_text(strip=True),
-                'url': 'https://www.trademe.co.nz' + link_tag['href']
-            })
-    return listings
+    
+    try:
+        
+        response = requests.get(url, headers=headers)
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        listings = []
+        
+        for card in soup.find_all('tm-marketplace-search-card-viewer')[:5]:
+            
+            title_tag = card.find('div', class_='tm-marketplace-search-card__title')
+            
+            link_tag = card.find('a', class_='tm-marketplace-search-card__link')
+            
+            if title_tag and link_tag:
+                
+                listings.append({
+                    
+                    'title': title_tag.get_text(strip=True),
+                    
+                    'url': 'https://www.trademe.co.nz' + link_tag['href']
+                    
+                })
+                
+        return listings
+        
+    except Exception as e:
+        
+        print(f'Error fetching listings for {keyword}: {e}')
+        
+        return []
+        
+
 
 def main():
+    
     if os.path.exists(FILE_NAME):
-        with open(FILE_NAME, 'r') as f:
-            seen = json.load(f)
-    else:
-        seen = []
-
-    current_listings = get_listings()
-    new_listings = [l for l in current_listings if l['url'] not in [s['url'] for s in seen]]
-
-    if new_listings:
-        print(f'Found {len(new_listings)} new listings!')
-        for l in new_listings:
-            msg = f"NEW INTEL LISTING: {l['title']} - {l['url']}"
-            print(msg)
-            send_discord_message(msg)
         
-        seen.extend(new_listings)
-        with open(FILE_NAME, 'w') as f:
-            json.dump(seen[-50:], f, indent=4)
+        with open(FILE_NAME, 'r') as f:
+            
+            try:
+                
+                seen = json.load(f)
+                
+            except:
+                
+                seen = []
+                
     else:
-        print('No new listings found.')
+        
+        seen = []
+        
+
+
+    new_seen = list(seen)
+    
+
+
+    for keyword in KEYWORDS:
+        
+        print(f'Checking keyword: {keyword}')
+        
+        listings = get_listings(keyword)
+        
+        for listing in listings:
+            
+            if listing['url'] not in seen:
+                
+                message = f"New listing found for **{keyword}**: {listing['title']}\\n{listing['url']}"
+                
+                send_discord_message(message)
+                
+                new_seen.append(listing['url'])
+                
+
+
+    # Keep only the last 1000 listings to prevent file growth
+
+    with open(FILE_NAME, 'w') as f:
+        
+        json.dump(new_seen[-1000:], f)
+        
+
 
 if __name__ == '__main__':
+    
     main()
+    
+""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
