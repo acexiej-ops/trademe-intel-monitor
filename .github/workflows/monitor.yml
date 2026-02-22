@@ -1,1 +1,34 @@
-name: Trade Me Monitor\n\non:\n  schedule:\n    - cron: '0 * * * *'\n  workflow_dispatch:\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout repository\n        uses: actions/checkout@v3\n\n      - name: Set up Python\n        uses: actions/setup-python@v4\n        with:\n          python-version: '3.x'\n\n      - name: Install dependencies\n        run: pip install requests beautifulsoup4\n\n      - name: Run monitor\n        run: python monitor.py\n\n      - name: Commit changes\n        run: |\n          git config --global user.name 'github-actions[bot]'\n          git config --global user.email 'github-actions[bot]@users.noreply.github.com'\n          git add seen_listings.json\n          git commit -m 'Update seen listings' || echo 'No changes to commit'\n          git push
+name: Trade Me Monitor
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Run monitor
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python monitor.py
+
+      - name: Commit changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add seen_listings.json
+          git commit -m "Update seen listings" || echo "No changes to commit"
+          git push
